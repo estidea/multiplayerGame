@@ -38,23 +38,34 @@
 		// цвет
 		ctx.fillStyle = "#29e929";
 
-		var player = {
-			x: 50,
-			y: 60,
-			speedX: 20,
-			speedY:2,
-			name: "P"
-		}
-		
-
 		socket.on('newPositions',function(data){
 			ctx.clearRect(0,0,WIDTH,HEIGHT);
 			for (var i=0;i<data.length;i++){
 				ctx.fillText(data[i].name,data[i].x,data[i].y);
 			}
-			
 		})
 
+		document.onkeydown = function(e) {
+			if(e.keyCode === 68) //d
+				socket.emit('keyPress',{inputId:'right', state:true});
+			if(e.keyCode === 83) //s
+				socket.emit('keyPress',{inputId:'bottom', state:true});
+			if(e.keyCode === 65) //a
+				socket.emit('keyPress',{inputId:'left', state:true});
+			if(e.keyCode === 87) //w
+				socket.emit('keyPress',{inputId:'top', state:true});
+		}
+
+		document.onkeyup = function(e) {
+			if(e.keyCode === 68) //d
+				socket.emit('keyPress',{inputId:'right', state:false});
+			if(e.keyCode === 83) //s
+				socket.emit('keyPress',{inputId:'bottom', state:false});
+			if(e.keyCode === 65) //a
+				socket.emit('keyPress',{inputId:'left', state:false});
+			if(e.keyCode === 87) //w
+				socket.emit('keyPress',{inputId:'top', state:false});
+		}
 
 		
 	</script>
