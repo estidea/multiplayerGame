@@ -3,9 +3,25 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Аркада на canvas</title>
-	<link rel="stylesheet" href="css/style.css">
+	<!-- <link rel="stylesheet" href="css/style.css"> -->
 </head>
 <body>
+	<button onclick="happy()">Happy!</button>
 	<canvas id="canvas-main"></canvas>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+	<script>
+		var socket = io();
+
+		var happy = function() {
+			socket.emit('happy', {
+				reason: 'it\'s my birthday'
+			});
+		}
+		
+
+		socket.on('serverMsg',function(data){
+			console.log(data.msg);
+		})
+	</script>
 </body>
 </html>
