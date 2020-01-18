@@ -14,7 +14,6 @@
 	</style>
 </head>
 <body>
-	<button onclick="happy()">Happy!</button>
 	<canvas id="canvas-main"></canvas>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
 	<script>
@@ -28,20 +27,19 @@
 		var ctx = canvas.getContext('2d');
 		var socket = io();
 
-		var happy = function() {
-			socket.emit('happy', {
-				reason: 'it\'s my birthday'
-			});
-		}
-
 		ctx.font = "40px Arial";
 		// цвет
 		ctx.fillStyle = "#29e929";
 
 		socket.on('newPositions',function(data){
 			ctx.clearRect(0,0,WIDTH,HEIGHT);
-			for (var i=0;i<data.length;i++){
-				ctx.fillText(data[i].name,data[i].x,data[i].y);
+			for (var i=0;i<data.players.length;i++){
+				ctx.fillStyle = "#29e929";
+				ctx.fillText(data.players[i].name,data.players[i].x,data.players[i].y);
+			}
+			for (var i=0;i<data.bullets.length;i++){
+				ctx.fillStyle = "red";
+				ctx.fillRect(data.bullets[i].x-5,data.bullets[i].y-5,10,10);
 			}
 		})
 
