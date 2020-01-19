@@ -31,6 +31,10 @@ var Entity = function() {
 		self.y += self.speedY;
 	}
 
+	self.getDistance = function(toObject) {
+		return Math.sqrt(Math.pow(self.x-toObject.x,2) + Math.pow(self.y-toObject.y,2));
+	}
+
 	return self;
 }
 
@@ -42,12 +46,24 @@ var Player = function(id) {
 	self.pressingLeft=false,
 	self.pressingTop=false,
 	self.pressingBottom=false,
+	self.pressingAttack=false,
+	self.mouseAngle = 0,
 	self.maxSpeed=10
 
 	var super_update = self.update;
 	self.update = function() {
 		self.updateSpeed();
 		super_update();
+
+		if(self.pressingAttack) {
+			self.shootBullet(self.mouseAngle);
+		}
+	}
+
+	self.shootBullet = function(angle) {
+		var b = Bullet(self.id,angle);
+		b.x = self.x;
+		b.y = self.y;
 	}
 
 	self.updateSpeed = function() {
@@ -80,6 +96,10 @@ Player.onConnect = function(socket) {
 			player.pressingTop = data.state;
 		if(data.inputId === 'bottom')
 			player.pressingBottom = data.state;
+		if(data.inputId === 'attack')
+			player.pressingAttack = data.state;
+		if(data.inputId === 'mouseAngle')
+			player.mouseAngle = data.state;
 	});
 }
 Player.onDisconnect = function(socket) {
@@ -99,12 +119,12 @@ Player.update = function() {
 	return pack;
 }
 
-var Bullet = function(angle) {
+var Bullet = function(parent,angle) {
 	var self = Entity();
 	self.id = Math.random();
 	self.speedX = Math.cos(angle/180*Math.PI) * 10;
 	self.speedY = Math.sin(angle/180*Math.PI) * 10;
-
+	self.parent = parent;
 	self.timer = 0;
 	self.toRemove = false;
 	var super_update = self.update;
@@ -112,6 +132,14 @@ var Bullet = function(angle) {
 		if(self.timer++ > 40)
 			self.toRemove = true;
 		super_update();
+
+		for (var i in Player.list) {
+			var p = Player.list[i];
+			if(self.getDistance(p) <= 20 && self.parent != p.id ) {
+				self.toRemove = true;
+				console.log("collision!");
+			}
+		}
 	}
 
 	Bullet.list[self.id] = self;
@@ -120,10 +148,6 @@ var Bullet = function(angle) {
 Bullet.list = {};
 
 Bullet.update = function() {
-	if(Math.random()<0.1) {
-		Bullet(Math.random()*360);
-	}
-
 	var pack = [];
 	for(var i  in Bullet.list) {
 		var bullet = Bullet.list[i];
