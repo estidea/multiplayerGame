@@ -11,10 +11,52 @@
 			height: 100%;
 			background-color: #2d2d2d;
 		}
+
+		#chat-container {
+			width: calc(100% - 48px);
+		    height: 140px;
+		    position: absolute;
+		    bottom: 0;
+		    padding: 0 24px;
+		    left: 0;
+		}
+
+		#chat-text {
+			width:100%;
+			height:100px;
+			overflow-y: auto;
+		    color: white;
+		}
+
+		#chat-form {
+			width:100%;
+			height:40px;
+		}
+
+		#chat-input {
+			width:100%;
+			height:30px;
+		    overflow: overlay;
+		    background-color: #00000000;
+		    border:none;
+	        color: white;
+            padding: 0 12px;
+            outline: none;
+		}
+
 	</style>
 </head>
 <body>
 	<canvas id="canvas-main"></canvas>
+
+	<div id="chat-container">
+		<div id="chat-text">
+			<div>Hello</div>
+		</div>
+		<form id="chat-form">
+			<input id="chat-input" type="text" placeholder="Введите ваше сообщение">
+		</form>
+	</div>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
 	<script>
 		var canvas = document.getElementById("canvas-main");
@@ -28,8 +70,10 @@
 		var socket = io();
 
 		ctx.font = "40px Arial";
-		// цвет
-		ctx.fillStyle = "#29e929";
+
+		var chatText = document.getElementById('chat-text');
+		var chatInput = document.getElementById('chat-input');
+		var chatForm = document.getElementById('chat-form');
 
 		socket.on('newPositions',function(data){
 			ctx.clearRect(0,0,WIDTH,HEIGHT);
@@ -64,6 +108,24 @@
 			if(e.keyCode === 87) //w
 				socket.emit('keyPress',{inputId:'top', state:false});
 		}
+
+		chatForm.onsubmit = function(e) {
+			e.preventDefault();
+			if(chatInput.value[0] === '/')
+				socket.emit('evalServer',chatInput.value.slice(1));
+			else
+				socket.emit('chatMsgToServ',chatInput.value);
+			chatInput.value = "";
+		}
+
+		socket.on('chatMsgToClient',function(data){
+			chatText.innerHTML += data;
+			chatText.scrollTo(0,chatText.scrollHeight);
+		});
+
+		socket.on('evalAnswer',function(data){
+			console.log(data);
+		});
 
 		
 	</script>

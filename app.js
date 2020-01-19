@@ -11,6 +11,7 @@ serv.listen(8080);
 console.log("Server is started. Open localhost:8080");
 
 var SOCKET_LIST = {};
+var DEBUG = true;
 
 var Entity = function() {
 	var self = {
@@ -108,7 +109,7 @@ var Bullet = function(angle) {
 	self.toRemove = false;
 	var super_update = self.update;
 	self.update = function() {
-		if(self.timer++ > 100)
+		if(self.timer++ > 40)
 			self.toRemove = true;
 		super_update();
 	}
@@ -127,26 +128,51 @@ Bullet.update = function() {
 	for(var i  in Bullet.list) {
 		var bullet = Bullet.list[i];
 		bullet.update();
-		pack.push({
-			x:bullet.x,
-			y:bullet.y,
-		});
+		if (bullet.toRemove === true) {
+			delete bullet;
+		} else {
+			pack.push({
+				x:bullet.x,
+				y:bullet.y,
+			});
+		}
 	}
 	return pack;
 }
 
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket) {
+	var sacket = socket; //TODO zachem??
 	socket.id = Math.random();
 	SOCKET_LIST[socket.id] = socket;
 	Player.onConnect(socket);
 
-	socket.on('disconnect',function(){
+	socket.on('disconnect', function(){
 		delete SOCKET_LIST[socket.id];
 		Player.onDisconnect(socket);
-		
 	});
 
+	socket.on('chatMsgToServ', function(data){
+		var playerName = sacket.id;
+		var msg = "<div>[" + playerName + "]: " + data + "</div>";
+		for(var i in SOCKET_LIST) {
+			var socket = SOCKET_LIST[i];
+			socket.emit('chatMsgToClient',msg);
+		}
+	});
+
+	socket.on('evalServer', function(data) {
+		if (DEBUG === false)
+			return;
+
+		try {
+			var res = eval(data);
+		} catch(error) {
+			res = error.message;
+		}
+		
+		socket.emit('evalAnswer',res);
+	})
 });
 
 //=================== GAME LOOP ==============
