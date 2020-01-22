@@ -9,9 +9,6 @@ app.use('/client',express.static(__dirname + '/client'));
 
 var PORT = process.env.PORT || 80
 
-// serv.listen(8080);
-// console.log("Server is started. Open localhost:8080");
-
 serv.listen(PORT, function() {
 	console.log("Server is started");
 });
