@@ -6,15 +6,32 @@
 	<link rel="stylesheet" href="client/css/style.css">
 </head>
 <body>
-	<canvas id="canvas-main"></canvas>
-
-	<div id="chat-container">
-		<div id="chat-text">
-			<div>Hello</div>
+	<div id="auth-container">
+		<div class="input-group">
+			<label class="form-label" for="auth-username">Username</label>
+			<input class="form-input" id="auth-username" type="text">
 		</div>
-		<form id="chat-form">
-			<input id="chat-input" type="text" placeholder="Введите ваше сообщение">
-		</form>
+		<div class="input-group">
+			<label class="form-label" for="">Password</label>
+			<input class="form-input" id="auth-password">
+		</div>
+		<div class="input-group">
+			<button class="form-btn" id="auth-signIn">Sign In</button>
+		</div>
+		<p>Have not an account? Please <a href="#" class="auth-link" id="auth-signUp">Sign Up</a></p>
+		<p>Or you can <a href="#" class="auth-link" id="auth-guest">Play as guest!</a></p>
+	</div>
+
+	<div id="game-container" style="display:none">
+		<canvas id="canvas-main"></canvas>
+		<div id="chat-container">
+			<div id="chat-text">
+				<div>Hello</div>
+			</div>
+			<form id="chat-form">
+				<input id="chat-input" type="text" placeholder="Введите ваше сообщение">
+			</form>
+		</div>
 	</div>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
 	<script>

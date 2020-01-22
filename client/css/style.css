@@ -5,6 +5,72 @@ body, html {
 	background-color: #2d2d2d;
 }
 
+* {
+	font-size: 20px;
+	outline: none;
+}
+
+/*======= AUTH =========*/
+#auth-container {
+	position: absolute;
+	width:300px;
+    top: 50%;
+    left: 50%;
+	transform: translate(-50%, -50%);
+	color: white;
+}
+
+.input-group:nth-child(3) {
+	margin-top:10px;
+}
+
+#auth-container p {
+	margin:0;
+	margin-top:10px;
+}
+
+.auth-link {
+	color: #e67a7a;
+}
+
+.input-group {
+	width:100%;
+	display: flex;
+	justify-content: space-between;
+	padding: 8px 0;
+	align-items: center;
+}
+
+.form-input {
+    width: calc(70% - 20px);
+	height: 40px;
+	border-radius: 8px;
+    border: none;
+    padding: 0 10px;
+}
+
+.form-label {
+	display:block;
+	width:30%;
+}
+
+.form-btn {
+	width: 100%;
+    background: #e67a7a;
+    border: none;
+    padding: 16px 0;
+    border-radius: 16px;
+	color: white;
+	cursor: pointer;
+}
+
+.form-btn:hover {
+	background: #d25151;
+}
+
+
+/*======= GAME =========*/
+
 #chat-container {
 	width: calc(100% - 48px);
 	height: 140px;
