@@ -16,6 +16,13 @@ serv.listen(PORT, function() {
 var SOCKET_LIST = {};
 var DEBUG = true;
 
+var USERS = {
+	"nick":"123",
+	"estidea":"123",
+	"vasya":"123",
+	"admin":"123"
+}
+
 var Entity = function() {
 	var self = {
 		x:250,
@@ -167,12 +174,16 @@ Bullet.update = function() {
 	return pack;
 }
 
+var isValidPassword = function(data) {
+	return USERS[data.username] === data.password;
+}
+
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket) {
 	var sacket = socket; //TODO zachem??
 	socket.id = Math.random();
 	SOCKET_LIST[socket.id] = socket;
-	Player.onConnect(socket);
+	
 
 	socket.on('disconnect', function(){
 		delete SOCKET_LIST[socket.id];
@@ -197,8 +208,16 @@ io.sockets.on('connection', function(socket) {
 		} catch(error) {
 			res = error.message;
 		}
-		
 		socket.emit('evalAnswer',res);
+	})
+
+	socket.on('signIn', function(data) {
+		if(isValidPassword(data)) {
+			success = true;
+			Player.onConnect(socket);
+		} else
+			success = false;
+		socket.emit('signInResponse',{success:success});
 	})
 });
 

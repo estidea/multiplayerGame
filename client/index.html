@@ -13,7 +13,7 @@
 		</div>
 		<div class="input-group">
 			<label class="form-label" for="">Password</label>
-			<input class="form-input" id="auth-password">
+			<input class="form-input" id="auth-password" type="password">
 		</div>
 		<div class="input-group">
 			<button class="form-btn" id="auth-signIn">Sign In</button>
@@ -26,7 +26,6 @@
 		<canvas id="canvas-main"></canvas>
 		<div id="chat-container">
 			<div id="chat-text">
-				<div>Hello</div>
 			</div>
 			<form id="chat-form">
 				<input id="chat-input" type="text" placeholder="Введите ваше сообщение">
@@ -35,6 +34,36 @@
 	</div>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
 	<script>
+		var socket = io();
+		var gameContainer = document.getElementById('game-container');
+		/* ============= AUTH SCREEN ================= */
+		var authContainer = document.getElementById('auth-container');
+		var authUsername = document.getElementById('auth-username');
+		var authPassword = document.getElementById('auth-password');
+		var authSignIn = document.getElementById('auth-signIn');
+		var authSignUp = document.getElementById('auth-signUp');
+		var authGuest = document.getElementById('auth-guest');
+
+		authSignIn.onclick = function() {
+			socket.emit('signIn',{username:authUsername.value,password:authPassword.value});
+		}
+
+		socket.on('signInResponse', function(data) {
+			console.log(data);
+			if(data.success){
+				authContainer.style.display = "none";
+				gameContainer.style.display = "block";
+			} else {
+				alert("Sign in is unsuccessfull");
+			}
+		});
+
+		authSignUp.onclick = function() {
+			socket.emit('signUp');
+		}
+
+
+		/* ============= GAME SCREEN ================= */
 		var canvas = document.getElementById("canvas-main");
 
 		canvas.width = window.innerWidth;
@@ -43,7 +72,7 @@
 		var HEIGHT = canvas.height;
 
 		var ctx = canvas.getContext('2d');
-		var socket = io();
+		
 
 		ctx.font = "40px Arial";
 
