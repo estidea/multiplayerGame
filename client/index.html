@@ -18,7 +18,7 @@
 		<div class="input-group">
 			<button class="form-btn" id="auth-signIn">Sign In</button>
 		</div>
-		<p>Have not an account? Please <a href="#" class="auth-link" id="auth-signUp">Sign Up</a></p>
+		<p>Have not an account? Use filled username and password <a href="#" class="auth-link" id="auth-signUp">to Sign Up</a></p>
 		<p>Or you can <a href="#" class="auth-link" id="auth-guest">Play as guest!</a></p>
 	</div>
 
@@ -36,6 +36,7 @@
 	<script>
 		var socket = io();
 		var gameContainer = document.getElementById('game-container');
+		
 		/* ============= AUTH SCREEN ================= */
 		var authContainer = document.getElementById('auth-container');
 		var authUsername = document.getElementById('auth-username');
@@ -49,18 +50,25 @@
 		}
 
 		socket.on('signInResponse', function(data) {
-			console.log(data);
 			if(data.success){
 				authContainer.style.display = "none";
 				gameContainer.style.display = "block";
 			} else {
-				alert("Sign in is unsuccessfull");
+				alert("Sign in is unsuccessfull \n" + data.errorMsg);
 			}
 		});
 
 		authSignUp.onclick = function() {
-			socket.emit('signUp');
+			socket.emit('signUp',{username:authUsername.value,password:authPassword.value});
 		}
+
+		socket.on('signUpResponse', function(data) {
+			if(data.success){
+				alert("Sign up is successfull");
+			} else {
+				alert("Sign up is unsuccessfull \n" + data.errorMsg);
+			}
+		});
 
 
 		/* ============= GAME SCREEN ================= */

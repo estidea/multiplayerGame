@@ -174,8 +174,24 @@ Bullet.update = function() {
 	return pack;
 }
 
-var isValidPassword = function(data) {
-	return USERS[data.username] === data.password;
+var isValidPassword = function(data,callback) {
+	setTimeout(function() {
+		// when data will be received from DB call callback f()
+		callback(USERS[data.username] === data.password);
+	},50);
+}
+
+var isUsernameTaken = function(data,callback) {
+	setTimeout(function() {
+		callback(USERS[data.username]);
+	},50);
+}
+
+var addUser = function(data,callback) {
+	setTimeout(function() {
+		USERS[data.username] = data.password;
+		callback();
+	},50);
 }
 
 var io = require('socket.io')(serv,{});
@@ -212,13 +228,47 @@ io.sockets.on('connection', function(socket) {
 	})
 
 	socket.on('signIn', function(data) {
-		if(isValidPassword(data)) {
-			success = true;
-			Player.onConnect(socket);
-		} else
-			success = false;
-		socket.emit('signInResponse',{success:success});
-	})
+		var success,errorMsg;
+		isUsernameTaken(data,function(resUsername){ // resUsername = true || false
+			// ToDo при неправильном вводе логина вылезает сообщение про пароль
+			if(resUsername==undefined){
+				success = false;
+				errorMsg = "Username " + data.username + " isn't registered yet";
+				socket.emit('signInResponse',{success:success,errorMsg:errorMsg});
+			} else {
+				isValidPassword(data,function(resPass){
+					if(resPass==false){
+						success = false;
+						errorMsg = "The password is not correct";
+						socket.emit('signInResponse',{success:success,errorMsg:errorMsg});
+					} else {
+						Player.onConnect(socket);
+						success = true;
+						socket.emit('signInResponse',{success:success,errorMsg:errorMsg});
+					}
+				})
+			}
+		});
+	});
+
+	socket.on('signUp', function(data) {
+		var success,errorMsg;
+		isUsernameTaken(data,function(resUsername){
+			console.log(resUsername);
+			if(resUsername==true) {
+				success = false;
+				errorMsg = "This username's been already used";
+				socket.emit('signUpResponse',{success:success,errorMsg:errorMsg});
+			} else {
+				addUser(data,function(){
+					success = true;
+					Player.onConnect(socket);
+					socket.emit('signUpResponse',{success:success,errorMsg:errorMsg});
+				});
+			}
+		})
+		
+	});
 });
 
 //=================== GAME LOOP ==============

@@ -6,8 +6,9 @@ body, html {
 }
 
 * {
-	font-size: 20px;
+	font-size: 16px;
 	outline: none;
+	font-family: sans-serif;
 }
 
 /*======= AUTH =========*/
