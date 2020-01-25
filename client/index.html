@@ -64,7 +64,7 @@
 
 		socket.on('signUpResponse', function(data) {
 			if(data.success){
-				alert("Sign up is successfull");
+				alert("Sign up is successfull. Use your username and password to login");
 			} else {
 				alert("Sign up is unsuccessfull \n" + data.errorMsg);
 			}
