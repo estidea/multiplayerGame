@@ -1,6 +1,30 @@
 var express = require('express');
 var app = express();
 var serv = require('http').Server(app);
+var mongoose = require("mongoose");
+require('dotenv').config();
+
+/* Database connection */
+var MONGO_DB_USERNAME = process.env.MONGO_DB_USERNAME;
+var MONGO_DB_PASSWORD = process.env.MONGO_DB_PASSWORD;
+const MONGOURI = "mongodb://"+ MONGO_DB_USERNAME +":"+ MONGO_DB_PASSWORD +"@ds011432.mlab.com:11432/multiplayer"
+
+mongoose.connect(MONGOURI,{useUnifiedTopology: true,useNewUrlParser: true },function(error){
+	if(error){
+		console.log(error);
+	} else {
+		console.log("Connected to database");
+	}
+});
+
+var userSchema = new mongoose.Schema({
+	username: String,
+	password: String
+});
+
+var User = mongoose.model("User", userSchema);
+
+/* Routes */
 
 app.get('/',function(req, res) {
 	res.sendFile(__dirname + '/client/index.html');
@@ -16,12 +40,7 @@ serv.listen(PORT, function() {
 var SOCKET_LIST = {};
 var DEBUG = true;
 
-var USERS = {
-	"nick":"123",
-	"estidea":"123",
-	"vasya":"123",
-	"admin":"123"
-}
+var USERS = {}
 
 var Entity = function() {
 	var self = {
@@ -175,23 +194,40 @@ Bullet.update = function() {
 }
 
 var isValidPassword = function(data,callback) {
-	setTimeout(function() {
-		// when data will be received from DB call callback f()
-		callback(USERS[data.username] === data.password);
-	},50);
+User.find({username:data.username,password:data.password},function(error,res){
+	if(res.length>0){
+		callback(true);
+	} else {
+		callback(false);
+	}
+});
 }
 
 var isUsernameTaken = function(data,callback) {
-	setTimeout(function() {
-		callback(USERS[data.username]);
-	},50);
+	User.find({username:data.username},function(error,res){
+		if(res.length>0){
+			callback(true);
+		} else {
+			callback(false);
+		}
+	});
 }
 
 var addUser = function(data,callback) {
-	setTimeout(function() {
-		USERS[data.username] = data.password;
-		callback();
-	},50);
+	User.create({
+		username:data.username,
+		password:data.password
+	},function(error,data){
+		if(error){
+			console.log("There was a problem to add new user");
+			console.log(error);
+			callback(false);
+		} else {
+			console.log("The user was added:");
+			console.log(data);
+			callback(true);
+		}
+	});
 }
 
 var io = require('socket.io')(serv,{});
@@ -230,8 +266,7 @@ io.sockets.on('connection', function(socket) {
 	socket.on('signIn', function(data) {
 		var success,errorMsg;
 		isUsernameTaken(data,function(resUsername){ // resUsername = true || false
-			// ToDo при неправильном вводе логина вылезает сообщение про пароль
-			if(resUsername==undefined){
+			if(resUsername===false){
 				success = false;
 				errorMsg = "Username " + data.username + " isn't registered yet";
 				socket.emit('signInResponse',{success:success,errorMsg:errorMsg});
@@ -249,6 +284,12 @@ io.sockets.on('connection', function(socket) {
 				})
 			}
 		});
+	});
+
+	socket.on('signGuest', function() {
+		var success,errorMsg;
+		Player.onConnect(socket);
+		socket.emit('signGuestResponse',{success:true,errorMsg:errorMsg});
 	});
 
 	socket.on('signUp', function(data) {

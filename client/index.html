@@ -70,6 +70,19 @@
 			}
 		});
 
+		authGuest.onclick = function() {
+			socket.emit('signGuest');
+		}
+
+		socket.on('signGuestResponse', function(data) {
+			if(data.success){
+				authContainer.style.display = "none";
+				gameContainer.style.display = "block";
+			} else {
+				alert("It doesn't work now \n" + data.errorMsg);
+			}
+		});
+
 
 		/* ============= GAME SCREEN ================= */
 		var canvas = document.getElementById("canvas-main");
