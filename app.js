@@ -72,16 +72,22 @@ var Player = function(id) {
 	self.id = id;
 	self.name = Math.floor(Math.random()*10);
 	self.pressingRight=false;
-	self.pressingLeft=false,
-	self.pressingTop=false,
-	self.pressingBottom=false,
-	self.pressingAttack=false,
-	self.mouseAngle = 0,
-	self.maxSpeed=10
+	self.pressingLeft=false;
+	self.pressingTop=false;
+	self.pressingBottom=false;
+	self.pressingAttack=false;
+	self.mouseAngle = 0;
+	self.maxSpeed=10;
+	self.canShoot=true;
+	self.reloadTime=25;
+	self.hp = 10;
+	self.maxHp = 10;
+	self.score = 0;
 
 	var super_update = self.update;
 	self.update = function() {
 		self.updateSpeed();
+		self.updateReload();
 		super_update();
 
 		if(self.pressingAttack) {
@@ -89,15 +95,23 @@ var Player = function(id) {
 		}
 	}
 
+	self.updateReload = function() {
+		if(self.reloadTime<25) {
+			self.reloadTime++;
+		} else {
+			self.canShoot = true;
+		}
+		
+	}
+
 	self.shootBullet = function(angle) {
-		var b = Bullet(self.id,angle);
-		b.x = self.x;
-		b.y = self.y;
-		initPack.bullet.push({
-			id:b.id,
-			x:b.x,
-			y:b.y,
-		});
+		if(self.canShoot) {
+			self.reloadTime = 0;
+			self.canShoot = false;
+			var b = Bullet(self.id,angle);
+			b.x = self.x;
+			b.y = self.y;
+		}
 	}
 
 	self.updateSpeed = function() {
@@ -114,13 +128,30 @@ var Player = function(id) {
 		else 
 			self.speedY = 0;
 	}
+
+	self.getInitPack = function() {
+		return {
+			id:self.id,
+			x:self.x,
+			y:self.y,
+			name:self.name,
+			hp:self.hp,
+			maxHp:self.maxHp,
+			score:self.score,
+		}
+	}
+
+	self.getUpdatePack = function(){
+		return {
+			id:self.id,
+			x:self.x,
+			y:self.y,
+			hp:self.hp,
+			score:self.score,
+		}
+	}
 	Player.list[id] = self;
-	initPack.player.push({
-		id:self.id,
-		x:self.x,
-		y:self.y,
-		name:self.name
-	});
+	initPack.player.push(self.getInitPack());
 	return self;
 }
 
@@ -141,6 +172,11 @@ Player.onConnect = function(socket) {
 		if(data.inputId === 'mouseAngle')
 			player.mouseAngle = data.state;
 	});
+
+	socket.emit('init', {
+		player:Player.getAllInitPack(),
+		bullet:Bullet.getAllInitPack()
+	})
 }
 Player.onDisconnect = function(socket) {
 	delete Player.list[socket.id];
@@ -151,13 +187,16 @@ Player.update = function() {
 	for(var i  in Player.list) {
 		var player = Player.list[i];
 		player.update();
-		pack.push({
-			id:player.id,
-			x:player.x,
-			y:player.y,
-		});
+		pack.push(player.getUpdatePack());
 	}
 	return pack;
+}
+
+Player.getAllInitPack = function() {
+	var players = [];
+	for (var i in Player.list) 
+		players.push(Player.list[i].getInitPack());
+	return players;
 }
 
 var Bullet = function(parent,angle) {
@@ -176,13 +215,40 @@ var Bullet = function(parent,angle) {
 
 		for (var i in Player.list) {
 			var p = Player.list[i];
-			if(self.getDistance(p) <= 20 && self.parent != p.id ) {
+			if(self.getDistance(p) <= 20 && self.parent !== p.id ) {
+				p.hp -= 1;
+				var shooter = Player.list[self.parent];
+				if(shooter) 
+					shooter.score += 1;
+				if (p.hp <= 0) {
+					if(shooter) 
+						shooter.score += 10;
+					p.hp = p.maxHp;
+					p.x = Math.random()*500;
+					p.y = Math.random()*500;
+				}
 				self.toRemove = true;
-				console.log("collision!");
 			}
 		}
 	}
 
+	self.getInitPack = function() {
+		return {
+			id:self.id,
+			x:self.x,
+			y:self.y,
+		}
+	}
+
+	self.getUpdatePack = function(){
+		return {
+			id:self.id,
+			x:self.x,
+			y:self.y,
+		}
+	}
+
+	initPack.bullet.push(self.getInitPack());
 	Bullet.list[self.id] = self;
 	return self;
 }
@@ -197,14 +263,17 @@ Bullet.update = function() {
 			removePack.bullet.push(bullet.id);
 			delete bullet;
 		} else {
-			pack.push({
-				id:bullet.id,
-				x:bullet.x,
-				y:bullet.y,
-			});
+			pack.push(bullet.getUpdatePack());
 		}
 	}
 	return pack;
+}
+
+Bullet.getAllInitPack = function() {
+	var bullets = [];
+	for (var i in Bullet.list) 
+		bullets.push(Bullet.list[i].getInitPack())
+	return bullets
 }
 
 var isValidPassword = function(data,callback) {
