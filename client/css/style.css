@@ -72,6 +72,10 @@ body, html {
 
 /*======= GAME =========*/
 
+#game-container {
+    max-height: 100vh;
+}
+
 #chat-container {
 	width: calc(100% - 48px);
 	height: 140px;

@@ -93,6 +93,11 @@ var Player = function(id) {
 		var b = Bullet(self.id,angle);
 		b.x = self.x;
 		b.y = self.y;
+		initPack.bullet.push({
+			id:b.id,
+			x:b.x,
+			y:b.y,
+		});
 	}
 
 	self.updateSpeed = function() {
@@ -110,6 +115,12 @@ var Player = function(id) {
 			self.speedY = 0;
 	}
 	Player.list[id] = self;
+	initPack.player.push({
+		id:self.id,
+		x:self.x,
+		y:self.y,
+		name:self.name
+	});
 	return self;
 }
 
@@ -133,6 +144,7 @@ Player.onConnect = function(socket) {
 }
 Player.onDisconnect = function(socket) {
 	delete Player.list[socket.id];
+	removePack.player.push(socket.id);
 }
 Player.update = function() {
 	var pack = [];
@@ -140,9 +152,9 @@ Player.update = function() {
 		var player = Player.list[i];
 		player.update();
 		pack.push({
+			id:player.id,
 			x:player.x,
 			y:player.y,
-			name: player.name
 		});
 	}
 	return pack;
@@ -182,9 +194,11 @@ Bullet.update = function() {
 		var bullet = Bullet.list[i];
 		bullet.update();
 		if (bullet.toRemove === true) {
+			removePack.bullet.push(bullet.id);
 			delete bullet;
 		} else {
 			pack.push({
+				id:bullet.id,
 				x:bullet.x,
 				y:bullet.y,
 			});
@@ -312,16 +326,27 @@ io.sockets.on('connection', function(socket) {
 	});
 });
 
-//=================== GAME LOOP ==============
+var initPack = {player:[],bullet:[]};
+var removePack = {player:[],bullet:[]};
+
+//=================== SERVER LOOP ==============
 setInterval(function(){
 	var pack = {
-		players:Player.update(),
-		bullets:Bullet.update()
+		player:Player.update(),
+		bullet:Bullet.update()
 	}
 	
 	for(var i  in SOCKET_LIST) {
 		var socket = SOCKET_LIST[i];
-		socket.emit('newPositions',pack);
+		socket.emit('init',initPack);
+		socket.emit('update',pack);
+		socket.emit('remove',removePack);
 	}
+
+	initPack.player = [];
+	initPack.bullet = [];
+
+	removePack.player = [];
+	removePack.bullet = [];
 
 },20);
