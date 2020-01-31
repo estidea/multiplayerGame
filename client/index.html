@@ -7,17 +7,19 @@
 </head>
 <body>
 	<div id="auth-container">
-		<div class="input-group">
-			<label class="form-label" for="auth-username">Username</label>
-			<input class="form-input" id="auth-username" type="text">
-		</div>
-		<div class="input-group">
-			<label class="form-label" for="">Password</label>
-			<input class="form-input" id="auth-password" type="password">
-		</div>
-		<div class="input-group">
-			<button class="form-btn" id="auth-signIn">Sign In</button>
-		</div>
+		<form onsubmit="return false;">
+			<div class="input-group">
+				<label class="form-label" for="auth-username">Username</label>
+				<input class="form-input" id="auth-username" type="text">
+			</div>
+			<div class="input-group">
+				<label class="form-label" for="">Password</label>
+				<input class="form-input" id="auth-password" type="password">
+			</div>
+			<div class="input-group">
+				<button class="form-btn" id="auth-signIn">Sign In</button>
+			</div>
+		</form>
 		<p>Have not an account? Use filled username and password <a href="#" class="auth-link" id="auth-signUp">to Sign Up</a></p>
 		<p>Or you can <a href="#" class="auth-link" id="auth-guest">Play as guest!</a></p>
 	</div>
@@ -47,7 +49,11 @@
 		var authGuest = document.getElementById('auth-guest');
 
 		authSignIn.onclick = function() {
-			socket.emit('signIn',{username:authUsername.value,password:authPassword.value});
+			if(authUsername.value && authPassword.value) {
+				socket.emit('signIn',{username:authUsername.value,password:authPassword.value});
+			} else {
+				alert("You have not fill username or password");
+			}
 		}
 
 		socket.on('signInResponse', function(data) {
@@ -60,7 +66,11 @@
 		});
 
 		authSignUp.onclick = function() {
-			socket.emit('signUp',{username:authUsername.value,password:authPassword.value});
+			if(authUsername.value && authPassword.value) {
+				socket.emit('signUp',{username:authUsername.value,password:authPassword.value});
+			} else {
+				alert("You have not fill username or password");
+			}
 		}
 
 		socket.on('signUpResponse', function(data) {
@@ -93,6 +103,15 @@
 		canvas.height = window.innerHeight;
 		var WIDTH = canvas.width;
 		var HEIGHT = canvas.height;
+		var WORLDSIZE = null;
+
+		window.onresize = function() {
+		  canvas.width = window.innerWidth; 
+		  canvas.height = window.innerHeight;
+
+		  WIDTH = canvas.width;
+		  HEIGHT = canvas.height;
+		}
 
 		var ctx = canvas.getContext('2d');
 		
@@ -110,21 +129,20 @@
 			self.score = initPack.score;
 
 			self.draw = function() {
+				var x = self.x - Player.list[selfId].x + WIDTH/2;
+				var y = self.y - Player.list[selfId].y + HEIGHT/2;
 				// skin
 				ctx.fillStyle = "#e67a7a";
 				ctx.beginPath();
-				ctx.arc(self.x, self.y, 14, 0, 2*Math.PI);
+				ctx.arc(x, y, 14, 0, 2*Math.PI);
 				ctx.closePath();
 				ctx.fill();
 				// name
-				ctx.fillText(self.name,self.x,self.y+24);
+				ctx.fillText(self.name,x,y+24);
 				// hp-bar
 				ctx.fillStyle = "#29e929";
 				var hpWidth = 30* self.hp/self.maxHp;
-				ctx.fillRect(self.x-hpWidth/2,self.y-30,hpWidth,4);
-				// score
-				ctx.fillStyle = "#ffffff";
-				ctx.fillText(self.score,self.x,self.y-44);
+				ctx.fillRect(x-hpWidth/2,y-30,hpWidth,4);
 			}
 
 			Player.list[self.id] = self;
@@ -140,8 +158,14 @@
 			self.y = initPack.y;
 
 			self.draw = function() {
+				var x = self.x - Player.list[selfId].x + WIDTH/2;
+				var y = self.y - Player.list[selfId].y + HEIGHT/2;
+
 				ctx.fillStyle = "red";
-				ctx.fillRect(self.x-5,self.y-5,10,10);
+				ctx.beginPath();
+				ctx.arc(x, y, 5, 0, 2*Math.PI);
+				ctx.closePath();
+				ctx.fill();
 			}
 
 			Bullet.list[self.id] = self;
@@ -150,8 +174,12 @@
 
 		Bullet.list = {};
 
-		
+		var selfId = null;
 		socket.on('init',function(data){
+			if(data.selfId)
+				selfId = data.selfId;
+			if(data.worldsize)
+				WORLDSIZE = data.worldsize;
 			for(var i=0;i<data.player.length;i++){
 				new Player(data.player[i]);
 			}
@@ -161,6 +189,23 @@
 		});
 
 		// ============ update ===============
+		var drawScore = function() {
+			ctx.fillStyle = "#ffffff";
+			ctx.fillText(Player.list[selfId].score,20,20);
+		}
+
+		var drawMap = function(){
+
+			var x = 0 - Player.list[selfId].x + WIDTH/2;
+			var y = 0 - Player.list[selfId].y + HEIGHT/2;
+
+			for (let j=0;j<WORLDSIZE/100;j++) {
+			 for (let i=0;i<WORLDSIZE/100;i++) {
+			  ctx.strokeRect(x+i*100,y+j*100,100,100);
+			 }
+			}
+		}
+
 		socket.on('update',function(data){
 			for(var i=0;i<data.player.length;i++){
 				var pack = data.player[i];
@@ -194,26 +239,28 @@
 				delete Player.list[data.player[i]];
 			}
 			for(var i=0;i<data.bullet.length;i++){
+				// if(data.bullet.length>0)
+					// console.log(data.bullet);
 				delete Bullet.list[data.bullet[i]];
+
 			}
 		});
 
 
 		// ============ client loop ===============
 		setInterval(function(){
+			if(!selfId) 
+				return;
 			ctx.clearRect(0,0,WIDTH,HEIGHT);
 			ctx.strokeStyle = "#3c3c3c";
-			for (let j=0;j<HEIGHT/100;j++) {
-			 for (let i=0;i<WIDTH/100;i++) {
-			  ctx.strokeRect(i*100,j*100,100,100);
-			 }
-			}
+			drawMap();
 			for (var i in Player.list){
 				Player.list[i].draw();
 			}
 			for (var i in Bullet.list){
 				Bullet.list[i].draw();
 			}
+			drawScore();
 		},20);
 
 		// ============ events ===============

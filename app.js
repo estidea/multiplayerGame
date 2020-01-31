@@ -40,15 +40,25 @@ serv.listen(PORT, function() {
 var SOCKET_LIST = {};
 var DEBUG = true;
 
-var USERS = {}
+var USERS = {};
+var worldsize = 2000;
 
-var Entity = function() {
+var Entity = function(param) {
 	var self = {
 		x:250,
 		y:250,
 		speedX:0,
 		speedY:0,
 		id:''
+	}
+
+	if(param){
+		if(param.x)
+			self.x = param.x;
+		if(param.y)
+			self.y = param.y;
+		if(param.id)
+			self.id = param.id;
 	}
 
 	self.update = function(){
@@ -67,9 +77,8 @@ var Entity = function() {
 	return self;
 }
 
-var Player = function(id) {
-	var self = Entity();
-	self.id = id;
+var Player = function(param) {
+	var self = Entity(param);
 	self.name = Math.floor(Math.random()*10);
 	self.pressingRight=false;
 	self.pressingLeft=false;
@@ -108,9 +117,12 @@ var Player = function(id) {
 		if(self.canShoot) {
 			self.reloadTime = 0;
 			self.canShoot = false;
-			var b = Bullet(self.id,angle);
-			b.x = self.x;
-			b.y = self.y;
+			var b = Bullet({
+				parent:self.id,
+				angle:angle,
+				x:self.x,
+				y:self.y
+			});
 		}
 	}
 
@@ -150,14 +162,16 @@ var Player = function(id) {
 			score:self.score,
 		}
 	}
-	Player.list[id] = self;
+	Player.list[self.id] = self;
 	initPack.player.push(self.getInitPack());
 	return self;
 }
 
 Player.list = {};
 Player.onConnect = function(socket) {
-	var player = Player(socket.id);
+	var player = Player({
+		id:socket.id
+	});
 	socket.on('keyPress',function(data){
 		if(data.inputId === 'right')
 			player.pressingRight = data.state;
@@ -174,6 +188,8 @@ Player.onConnect = function(socket) {
 	});
 
 	socket.emit('init', {
+		worldsize:worldsize,
+		selfId:socket.id,
 		player:Player.getAllInitPack(),
 		bullet:Bullet.getAllInitPack()
 	})
@@ -199,12 +215,13 @@ Player.getAllInitPack = function() {
 	return players;
 }
 
-var Bullet = function(parent,angle) {
-	var self = Entity();
+var Bullet = function(param) {
+	var self = Entity(param);
 	self.id = Math.random();
-	self.speedX = Math.cos(angle/180*Math.PI) * 10;
-	self.speedY = Math.sin(angle/180*Math.PI) * 10;
-	self.parent = parent;
+	self.angle = param.angle; 
+	self.speedX = Math.cos(param.angle/180*Math.PI) * 10;
+	self.speedY = Math.sin(param.angle/180*Math.PI) * 10;
+	self.parent = param.parent;
 	self.timer = 0;
 	self.toRemove = false;
 	var super_update = self.update;
@@ -261,7 +278,7 @@ Bullet.update = function() {
 		bullet.update();
 		if (bullet.toRemove === true) {
 			removePack.bullet.push(bullet.id);
-			delete bullet;
+			delete Bullet.list[i];
 		} else {
 			pack.push(bullet.getUpdatePack());
 		}
@@ -378,7 +395,6 @@ io.sockets.on('connection', function(socket) {
 	socket.on('signUp', function(data) {
 		var success,errorMsg;
 		isUsernameTaken(data,function(resUsername){
-			console.log(resUsername);
 			if(resUsername==true) {
 				success = false;
 				errorMsg = "This username's been already used";
@@ -417,5 +433,6 @@ setInterval(function(){
 
 	removePack.player = [];
 	removePack.bullet = [];
+
 
 },20);
