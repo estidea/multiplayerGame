@@ -79,7 +79,7 @@ var Entity = function(param) {
 
 var Player = function(param) {
 	var self = Entity(param);
-	self.name = Math.floor(Math.random()*10);
+	self.username = param.username;
 	self.pressingRight=false;
 	self.pressingLeft=false;
 	self.pressingTop=false;
@@ -98,10 +98,22 @@ var Player = function(param) {
 		self.updateSpeed();
 		self.updateReload();
 		super_update();
+		self.checkBorders();
 
 		if(self.pressingAttack) {
 			self.shootBullet(self.mouseAngle);
 		}
+	}
+
+	self.checkBorders = function() {
+		if(self.x<0)
+			self.x = 1;
+		if(self.x>worldsize)
+			self.x = worldsize;
+		if(self.y<0)
+			self.y = 1;
+		if(self.y>worldsize)
+			self.y = worldsize;
 	}
 
 	self.updateReload = function() {
@@ -146,7 +158,7 @@ var Player = function(param) {
 			id:self.id,
 			x:self.x,
 			y:self.y,
-			name:self.name,
+			username:self.username,
 			hp:self.hp,
 			maxHp:self.maxHp,
 			score:self.score,
@@ -168,9 +180,11 @@ var Player = function(param) {
 }
 
 Player.list = {};
-Player.onConnect = function(socket) {
+Player.onConnect = function(socket,username) { // After the successfull auth or guest
+	var username = username || "guest";
 	var player = Player({
-		id:socket.id
+		id:socket.id,
+		username:username
 	});
 	socket.on('keyPress',function(data){
 		if(data.inputId === 'right')
@@ -185,6 +199,29 @@ Player.onConnect = function(socket) {
 			player.pressingAttack = data.state;
 		if(data.inputId === 'mouseAngle')
 			player.mouseAngle = data.state;
+	});
+
+	socket.on('chatMsgToServ', function(data){
+		var msg = "<div>[" + username + "]: " + data + "</div>";
+		for(var i in SOCKET_LIST) {
+			var socket = SOCKET_LIST[i];
+			socket.emit('chatMsgToClient',msg);
+		}
+	});
+
+	socket.on('chatPrivateMsgToServ', function(data){
+		var recipientSocket = null;
+		for(var i in Player.list){
+			if(Player.list[i].username===data.username)
+				recipientSocket = SOCKET_LIST[i];
+		}
+			
+		if(recipientSocket===null){
+			socket.emit('chatMsgToClient',"<div>There is no player with nickname [" + data.username + "]</div>");
+		} else {
+			socket.emit('chatMsgToClient',"<div class='private-msg'>To [" + data.username + "]:"+data.message+"</div>");
+			recipientSocket.emit('chatMsgToClient',"<div class='private-msg'>From [" + player.username + "]:"+data.message+"</div>");
+		}
 	});
 
 	socket.emit('init', {
@@ -331,30 +368,18 @@ var addUser = function(data,callback) {
 }
 
 var io = require('socket.io')(serv,{});
-io.sockets.on('connection', function(socket) {
-	var sacket = socket; //TODO zachem??
+io.sockets.on('connection', function(socket) { // The first connection to the site
 	socket.id = Math.random();
 	SOCKET_LIST[socket.id] = socket;
 	
-
 	socket.on('disconnect', function(){
 		delete SOCKET_LIST[socket.id];
 		Player.onDisconnect(socket);
 	});
 
-	socket.on('chatMsgToServ', function(data){
-		var playerName = sacket.id;
-		var msg = "<div>[" + playerName + "]: " + data + "</div>";
-		for(var i in SOCKET_LIST) {
-			var socket = SOCKET_LIST[i];
-			socket.emit('chatMsgToClient',msg);
-		}
-	});
-
 	socket.on('evalServer', function(data) {
 		if (DEBUG === false)
 			return;
-
 		try {
 			var res = eval(data);
 		} catch(error) {
@@ -377,7 +402,7 @@ io.sockets.on('connection', function(socket) {
 						errorMsg = "The password is not correct";
 						socket.emit('signInResponse',{success:success,errorMsg:errorMsg});
 					} else {
-						Player.onConnect(socket);
+						Player.onConnect(socket,data.username);
 						success = true;
 						socket.emit('signInResponse',{success:success,errorMsg:errorMsg});
 					}

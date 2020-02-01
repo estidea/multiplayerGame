@@ -86,7 +86,7 @@ body, html {
 }
 
 #chat-text {
-	width:100%;
+	width:40%;
 	height:100px;
 	overflow-y: auto;
 	color: white;
@@ -106,4 +106,23 @@ body, html {
 	color: white;
 	padding: 0 12px;
 	outline: none;
+}
+
+.private-msg {
+	color: #d25151;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar-track {
+	background-color: rgba(0,0,0,0);
+}
+
+::-webkit-scrollbar {
+	width: 10px;
+	background-color: rgba(0,0,0,0);
+}
+
+::-webkit-scrollbar-thumb {
+	border-radius: 10px;
+	background-color: #e67a7a99;
 }
