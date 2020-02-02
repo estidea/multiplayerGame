@@ -1,5 +1,8 @@
 var mongoose = require("mongoose");
+var bcrypt = require('bcryptjs');
 require('dotenv').config();
+
+var salt = bcrypt.genSaltSync(10);
 
 /* Database connection */
 var MONGO_DB_USERNAME = process.env.MONGO_DB_USERNAME;
@@ -25,7 +28,8 @@ User = mongoose.model("User", userSchema);
 Database = {};
 
 Database.isValidPassword = function(data,callback) {
-	User.find({username:data.username,password:data.password},function(error,res){
+ 	hashedPass = bcrypt.hashSync(data.password, salt);
+	User.find({username:data.username,password:hashedPass},function(error,res){
 	if(res.length>0){
 		callback(true);
 	} else {
@@ -45,9 +49,10 @@ Database.isUsernameTaken = function(data,callback) {
 }
 
 Database.addUser = function(data,callback) {
+	var passToSave = bcrypt.hashSync(data.password, salt);
 	User.create({
 		username:data.username,
-		password:data.password,
+		password:passToSave,
 		globalScore:0
 	},function(error,data){
 		if(error){
