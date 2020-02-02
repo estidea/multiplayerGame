@@ -4,6 +4,8 @@ require('dotenv').config();
 
 var salt = bcrypt.genSaltSync(10);
 
+mongoose.set('useFindAndModify', false);
+
 /* Database connection */
 var MONGO_DB_USERNAME = process.env.MONGO_DB_USERNAME;
 var MONGO_DB_PASSWORD = process.env.MONGO_DB_PASSWORD;
@@ -23,18 +25,23 @@ userSchema = new mongoose.Schema({
 	globalScore: Number
 });
 
+userSchema.methods.comparePassword = function(candidatePassword, cb) {
+    bcrypt.compare(candidatePassword, this.password, function(err, isMatch) {
+        if (err) return cb(err);
+        cb(null, isMatch);
+    });
+};
+
 User = mongoose.model("User", userSchema);
 
 Database = {};
 
 Database.isValidPassword = function(data,callback) {
- 	hashedPass = bcrypt.hashSync(data.password, salt);
-	User.find({username:data.username,password:hashedPass},function(error,res){
-	if(res.length>0){
-		callback(true);
-	} else {
-		callback(false);
-	}
+	User.find({username:data.username},function(error,res){
+		res[0].comparePassword(data.password, function(err, isMatch) {
+	    if (err) throw err;
+	    callback(isMatch);
+		});
 });
 }
 
@@ -67,12 +74,24 @@ Database.addUser = function(data,callback) {
 	});
 }
 
-Database.getGlobalScore = function(data) {
+Database.getGlobalScore = function(data,callback) {
 	User.find({username:data.username},function(error,res){
 		if(res.length>0){
-			return res[0].globalScore;
+			callback(res[0].globalScore);
 		} else {
-			return 0;
+			callback(null);
+		}
+	});
+}
+
+Database.setGlobalScore = function(data,callback) {
+	if(!data)
+		return;
+	User.findOneAndUpdate({username:data.username}, {globalScore:data.globalScore+data.score}, function(error,res){
+		if(error){
+			callback();
+		} else {
+			callback();
 		}
 	});
 }

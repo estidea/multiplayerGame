@@ -20,7 +20,7 @@ serv.listen(PORT, function() {
 });
 
 var SOCKET_LIST = {};
-var DEBUG = true;
+var DEBUG = false;
 
 var USERS = {};
 worldsize = 2000;
@@ -61,10 +61,11 @@ io.sockets.on('connection', function(socket) { // The first connection to the si
 						errorMsg = "The password is not correct";
 						socket.emit('signInResponse',{success:success,errorMsg:errorMsg});
 					} else {
-						Player.onConnect(socket,data.username);
-						console.log(Database.getGlobalScore(data));
-						success = true;
-						socket.emit('signInResponse',{success:success,errorMsg:errorMsg});
+						Database.getGlobalScore(data,function(resGlobalScore){
+							Player.onConnect(socket,data.username,resGlobalScore);
+							success = true;
+							socket.emit('signInResponse',{success:success,errorMsg:errorMsg});
+						});		
 					}
 				})
 			}

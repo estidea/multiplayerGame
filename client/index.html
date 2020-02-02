@@ -28,6 +28,7 @@
 		<canvas id="canvas-main"></canvas>
 		<div id="chat-container">
 			<div id="chat-text">
+				<div>Here you can chat to all users. Type @username to send a private message.</div>
 			</div>
 			<form id="chat-form">
 				<input id="chat-input" type="text" placeholder="Введите ваше сообщение">
@@ -127,6 +128,7 @@
 			self.hp = initPack.hp;
 			self.maxHp = initPack.maxHp;
 			self.score = initPack.score;
+			self.globalScore = initPack.globalScore;
 
 			self.draw = function() {
 				var x = self.x - Player.list[selfId].x + WIDTH/2;
@@ -191,8 +193,10 @@
 
 		// ============ update ===============
 		var drawScore = function() {
+			ctx.textAlign = "left";
 			ctx.fillStyle = "#ffffff";
-			ctx.fillText(Player.list[selfId].score,20,20);
+			ctx.fillText("Score: " + Player.list[selfId].score,20,20);
+			ctx.fillText("GlobalScore: " + Player.list[selfId].globalScore,20,50);
 		}
 
 		var drawMap = function(){

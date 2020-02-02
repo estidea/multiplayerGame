@@ -3,8 +3,8 @@ var removePack = {player:[],bullet:[]};
 
 Entity = function(param) {
 	var self = {
-		x:250,
-		y:250,
+		x:0,
+		y:0,
 		speedX:0,
 		speedY:0,
 		id:''
@@ -63,6 +63,8 @@ Entity.getFrameUpdateData = function() {
 Player = function(param) {
 	var self = Entity(param);
 	self.username = param.username;
+	self.socket = param.socket;
+	self.globalScore = param.globalScore;
 	self.pressingRight=false;
 	self.pressingLeft=false;
 	self.pressingTop=false;
@@ -145,6 +147,7 @@ Player = function(param) {
 			hp:self.hp,
 			maxHp:self.maxHp,
 			score:self.score,
+			globalScore:self.globalScore
 		}
 	}
 
@@ -181,11 +184,15 @@ Player.getAllInitPack = function() {
 	return players;
 }
 
-Player.onConnect = function(socket,username) { // After the successfull auth or guest
+Player.onConnect = function(socket,username,globalScore) { // After the successfull auth or guest
 	var username = username || "guest";
 	var player = Player({
+		x:Math.floor(Math.random()*worldsize),
+		y:Math.floor(Math.random()*worldsize),
 		id:socket.id,
-		username:username
+		username:username,
+		globalScore:globalScore,
+		socket:socket
 	});
 	socket.on('keyPress',function(data){
 		if(data.inputId === 'right')
@@ -204,9 +211,8 @@ Player.onConnect = function(socket,username) { // After the successfull auth or 
 
 	socket.on('chatMsgToServ', function(data){
 		var msg = "<div>[" + username + "]: " + data + "</div>";
-		for(var i in SOCKET_LIST) {
-			var socket = SOCKET_LIST[i];
-			socket.emit('chatMsgToClient',msg);
+		for(var i in Player.list) {
+			Player.list[i].socket.emit('chatMsgToClient',msg);
 		}
 	});
 
@@ -214,7 +220,7 @@ Player.onConnect = function(socket,username) { // After the successfull auth or 
 		var recipientSocket = null;
 		for(var i in Player.list){
 			if(Player.list[i].username===data.username)
-				recipientSocket = SOCKET_LIST[i];
+				recipientSocket = Player.list[i].socket;
 		}
 			
 		if(recipientSocket===null){
@@ -233,6 +239,7 @@ Player.onConnect = function(socket,username) { // After the successfull auth or 
 	})
 }
 Player.onDisconnect = function(socket) {
+	Database.setGlobalScore(Player.list[socket.id],function(){});
 	delete Player.list[socket.id];
 	removePack.player.push(socket.id);
 }
