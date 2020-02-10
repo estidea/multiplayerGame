@@ -73,7 +73,8 @@ Player = function(param) {
 	self.mouseAngle = 0;
 	self.maxSpeed=10;
 	self.canShoot=true;
-	self.reloadTime=25;
+	self.reloadTime=0;
+	self.shootSpeed=10;
 	self.hp = 10;
 	self.maxHp = 10;
 	self.score = 0;
@@ -102,7 +103,7 @@ Player = function(param) {
 	}
 
 	self.updateReload = function() {
-		if(self.reloadTime<25) {
+		if(self.reloadTime<self.shootSpeed) {
 			self.reloadTime++;
 		} else {
 			self.canShoot = true;
@@ -248,8 +249,8 @@ Bullet = function(param) {
 	var self = Entity(param);
 	self.id = Math.random();
 	self.angle = param.angle; 
-	self.speedX = Math.cos(param.angle/180*Math.PI) * 10;
-	self.speedY = Math.sin(param.angle/180*Math.PI) * 10;
+	self.speedX = Math.cos(param.angle/180*Math.PI) * 20;
+	self.speedY = Math.sin(param.angle/180*Math.PI) * 20;
 	self.parent = param.parent;
 	self.timer = 0;
 	self.toRemove = false;
