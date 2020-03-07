@@ -7,7 +7,9 @@ Entity = function(param) {
 		y:0,
 		speedX:0,
 		speedY:0,
-		id:''
+		id:'',
+		shape:"circle",
+		size:10
 	}
 
 	if(param){
@@ -17,6 +19,18 @@ Entity = function(param) {
 			self.y = param.y;
 		if(param.id)
 			self.id = param.id;
+		if(param.shape)
+			self.shape = param.shape;	
+		if(param.size)
+			self.size = param.size;
+	}
+
+	if(self.shape==="circle") {
+		self.body = Bodies.circle(self.x,self.y,self.size);
+        World.add(world,self.body);
+	} else if(self.shape==="rect") {
+		self.body = Bodies.rectangle(self.x,self.y,self.size,self.size);
+        World.add(world,self.body);
 	}
 
 	self.update = function(){
@@ -71,7 +85,9 @@ Player = function(param) {
 	self.pressingBottom=false;
 	self.pressingAttack=false;
 	self.mouseAngle = 0;
-	self.maxSpeed=10;
+	self.touchSpeed = 0.01;
+	self.maxSpeed = 10;
+
 	self.canShoot=true;
 	self.reloadTime=0;
 	self.shootSpeed=10;
@@ -79,11 +95,12 @@ Player = function(param) {
 	self.maxHp = 10;
 	self.score = 0;
 
-	var super_update = self.update;
+	// var super_update = self.update;
 	self.update = function() {
 		self.updateSpeed();
+		self.updateCoords();
 		self.updateReload();
-		super_update();
+		// super_update();
 		self.checkBorders();
 
 		if(self.pressingAttack) {
@@ -92,14 +109,18 @@ Player = function(param) {
 	}
 
 	self.checkBorders = function() {
-		if(self.x<0)
-			self.x = 1;
-		if(self.x>worldsize)
-			self.x = worldsize;
-		if(self.y<0)
-			self.y = 1;
-		if(self.y>worldsize)
-			self.y = worldsize;
+		if(self.x<=0)
+			self.body.position.x = 0;
+			Body.setVelocity( self.body, {x: 0, y: self.body.velocity.y});
+		if(self.x>=worldsize)
+			self.body.position.x = worldsize;
+			Body.setVelocity( self.body, {x: 0, y: self.body.velocity.y});
+		if(self.y<=0)
+			self.body.position.y = 0;
+			Body.setVelocity( self.body, {x: self.body.velocity.x, y: 0});
+		if(self.y>=worldsize)
+			self.body.position.y = worldsize;
+			Body.setVelocity( self.body, {x: self.body.velocity.x, y: 0});
 	}
 
 	self.updateReload = function() {
@@ -119,24 +140,34 @@ Player = function(param) {
 				parent:self.id,
 				angle:angle,
 				x:self.x,
-				y:self.y
+				y:self.y,
+				shape:"bullet"
 			});
 		}
 	}
 
 	self.updateSpeed = function() {
-		if(self.pressingRight)
-			self.speedX = self.maxSpeed;
-		else if(self.pressingLeft)
-			self.speedX = -self.maxSpeed;
-		else
-			self.speedX = 0;
-		if(self.pressingTop)
-			self.speedY = -self.maxSpeed;
-		else if(self.pressingBottom)
-			self.speedY = self.maxSpeed;
-		else 
-			self.speedY = 0;
+		if (self.pressingTop) {
+            if(self.body.velocity.y>=-self.maxSpeed)
+                Body.applyForce( self.body, {x: self.body.position.x, y: self.body.position.y}, {x: 0, y: -self.touchSpeed});
+        }
+        if (self.pressingBottom) {
+            if(self.body.velocity.y<=self.maxSpeed)
+                Body.applyForce( self.body, {x: self.body.position.x, y: self.body.position.y}, {x: 0, y: self.touchSpeed});
+        }
+        if (self.pressingLeft) {
+            if(self.body.velocity.x>=-self.maxSpeed)
+                Body.applyForce( self.body, {x: self.body.position.x, y: self.body.position.y}, {x: -self.touchSpeed, y: 0});
+        }
+        if (self.pressingRight) {
+            if(self.body.velocity.x<=self.maxSpeed)
+                Body.applyForce( self.body, {x: self.body.position.x, y: self.body.position.y}, {x: self.touchSpeed, y: 0});
+        } 
+	}
+
+	self.updateCoords = function() {
+		self.x = self.body.position.x;
+		self.y = self.body.position.y;
 	}
 
 	self.getInitPack = function() {
@@ -193,8 +224,11 @@ Player.onConnect = function(socket,username,globalScore) { // After the successf
 		id:socket.id,
 		username:username,
 		globalScore:globalScore,
-		socket:socket
+		socket:socket,
+		shape:"circle",
+		size:14
 	});
+
 	socket.on('keyPress',function(data){
 		if(data.inputId === 'right')
 			player.pressingRight = data.state;
@@ -271,8 +305,9 @@ Bullet = function(param) {
 					if(shooter) 
 						shooter.score += 10;
 					p.hp = p.maxHp;
-					p.x = Math.random()*500;
-					p.y = Math.random()*500;
+					
+					p.body.position.x = Math.floor(Math.random()*worldsize);
+					p.body.position.y = Math.floor(Math.random()*worldsize);
 				}
 				self.toRemove = true;
 			}

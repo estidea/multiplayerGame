@@ -2,6 +2,7 @@ var express = require('express');
 var app = express();
 var serv = require('http').Server(app);
 
+require('./World');
 require('./Entity');
 require('./Database');
 
@@ -23,8 +24,9 @@ var SOCKET_LIST = {};
 var DEBUG = false;
 
 var USERS = {};
-worldsize = 2000;
 
+// Physics world section
+worldsize = 2000;
 
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket) { // The first connection to the site
